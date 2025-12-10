@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Identification de Motifs - Infer.Net</title>
+    <!-- Tailwind CSS pour le style rapide -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome pour les icones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Slide Transitions */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            visibility: hidden;
+        }
+
+        .slide.active {
+            opacity: 1;
+            transform: translateX(0);
+            visibility: visible;
+            z-index: 10;
+        }
+
+        .slide.prev {
+            transform: translateX(-100%);
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        /* DNA Background Animation */
+        .dna-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.05;
+            background-image: radial-gradient(#38bdf8 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        /* Custom Scrollbar for code blocks */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; 
+            border-radius: 4px;
+        }
+
+        .highlight-word {
+            color: #38bdf8; /* Sky 400 */
+            font-weight: bold;
+        }
+        
+        .csharp-keyword { color: #c678dd; } /* Purple */
+        .csharp-type { color: #e5c07b; } /* Yellow */
+        .csharp-string { color: #98c379; } /* Green */
+        .csharp-comment { color: #5c6370; font-style: italic; } /* Grey */
+        .csharp-method { color: #61afef; } /* Blue */
+
+    </style>
+</head>
+<body class="antialiased h-screen w-screen relative">
+
+    <!-- Background Pattern -->
+    <div class="dna-bg"></div>
+
+    <!-- Progress Bar -->
+    <div class="fixed top-0 left-0 h-1 bg-blue-500 transition-all duration-300 z-50" id="progress-bar" style="width: 0%"></div>
+
+    <!-- Navigation Controls (Bottom Right) -->
+    <div class="fixed bottom-8 right-8 z-50 flex gap-4">
+        <button onclick="prevSlide()" class="p-3 bg-slate-800 hover:bg-slate-700 rounded-full text-white transition shadow-lg border border-slate-600">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button onclick="nextSlide()" class="p-3 bg-blue-600 hover:bg-blue-500 rounded-full text-white transition shadow-lg shadow-blue-500/30">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>
+
+    <!-- Slide Counter -->
+    <div class="fixed bottom-8 left-8 z-50 text-slate-500 font-mono text-sm">
+        SLIDE <span id="slide-number">1</span> / <span id="total-slides">10</span>
+    </div>
+
+    <!-- ================= SLIDES START ================= -->
+
+    <!-- SLIDE 1: Title -->
+    <div class="slide active" id="slide-1">
+        <div class="text-center max-w-4xl relative z-10">
+            <div class="inline-block p-4 rounded-full bg-blue-500/10 mb-6 border border-blue-500/20">
+                <i class="fas fa-dna text-4xl text-blue-400"></i>
+            </div>
+            <h1 class="text-6xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
+                Identification de Motifs Génétiques
+            </h1>
+            <h2 class="text-3xl text-slate-400 font-light mb-12">
+                Approche par Programmation Probabiliste avec <span class="text-white font-semibold">Infer.Net</span>
+            </h2>
+            
+            <div class="flex justify-center gap-12 text-left text-slate-300 mt-12 border-t border-slate-700 pt-8">
+                <div>
+                    <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Module</p>
+                    <p class="font-semibold">Programmation Probabiliste & ML</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Sujet</p>
+                    <p class="font-semibold">Option 1 : Analyse & Expérimentation</p>
+                </div>
+                <div>
+                    <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Outil</p>
+                    <p class="font-semibold text-blue-400">Microsoft Infer.Net (C#)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 2: Le Problème -->
+    <div class="slide" id="slide-2">
+        <div class="max-w-6xl w-full grid grid-cols-2 gap-12 items-center">
+            <div>
+                <h3 class="text-blue-400 text-sm font-bold tracking-widest uppercase mb-2">Contexte Biologique</h3>
+                <h2 class="text-4xl font-bold mb-6">Chercher une aiguille dans une botte de foin (ADN)</h2>
+                <p class="text-lg text-slate-300 mb-6 leading-relaxed">
+                    Un <span class="highlight-word">Motif</span> est une courte séquence d'ADN (ex: facteur de transcription) qui se répète et possède une fonction biologique.
+                </p>
+                <ul class="space-y-4 text-slate-300">
+                    <li class="flex items-start">
+                        <i class="fas fa-times-circle text-red-400 mt-1 mr-3"></i>
+                        <span><strong>Problème :</strong> Le motif n'est pas identique à chaque fois (mutations). Une simple recherche de texte (CTRL+F) échoue.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-layer-group text-blue-400 mt-1 mr-3"></i>
+                        <span><strong>Données :</strong> Nous avons des centaines de séquences bruitées (A, C, G, T) et nous ignorons <em>où</em> est le motif et <em>à quoi</em> il ressemble exactement.</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>
+                <div class="code-font text-sm space-y-2 opacity-80">
+                    <p class="text-slate-500">// Sequence 1</p>
+                    <p>ATGC<span class="bg-yellow-500/30 text-yellow-300 font-bold px-1 rounded">AGTA</span>CCCGTTAGCT...</p>
+                    <p class="text-slate-500">// Sequence 2</p>
+                    <p>TTGGCCAA<span class="bg-yellow-500/30 text-yellow-300 font-bold px-1 rounded">AGTC</span>GGT...</p>
+                    <p class="text-slate-500">// Sequence 3 (Pas de motif ?)</p>
+                    <p>CCGGTTAACCGGTTA...</p>
+                    <p class="text-slate-500">// Sequence 4</p>
+                    <p><span class="bg-yellow-500/30 text-yellow-300 font-bold px-1 rounded">ACTA</span>GGCCTTAAGGCC...</p>
+                </div>
+                <div class="mt-4 text-center">
+                    <i class="fas fa-arrow-up text-yellow-400 animate-bounce"></i>
+                    <p class="text-xs text-yellow-400 mt-1">Le Motif caché (similaire mais varié)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 3: L'Approche Probabiliste -->
+    <div class="slide" id="slide-3">
+        <div class="text-center max-w-4xl">
+            <h2 class="text-4xl font-bold mb-12">Le Changement de Paradigme</h2>
+            
+            <div class="grid grid-cols-2 gap-8">
+                <!-- Old Way -->
+                <div class="p-8 rounded-2xl bg-slate-800/50 border border-slate-700 grayscale opacity-70 hover:opacity-100 transition duration-500">
+                    <div class="text-4xl mb-4 text-slate-400"><i class="fas fa-code"></i></div>
+                    <h3 class="text-xl font-bold mb-2">Approche Algorithmique</h3>
+                    <p class="text-sm text-slate-400 italic mb-4">"Comment trouver ?"</p>
+                    <ul class="text-left text-sm space-y-2 text-slate-300">
+                        <li>• Écrire des boucles complexes</li>
+                        <li>• Gérer les cas limites manuellement</li>
+                        <li>• Difficile à modifier si le modèle change</li>
+                    </ul>
+                </div>
+
+                <!-- New Way -->
+                <div class="p-8 rounded-2xl bg-gradient-to-b from-slate-800 to-blue-900/20 border border-blue-500/30 shadow-lg shadow-blue-500/10 transform scale-105">
+                    <div class="text-4xl mb-4 text-blue-400"><i class="fas fa-dice-d20"></i></div>
+                    <h3 class="text-xl font-bold mb-2 text-white">Programmation Probabiliste</h3>
+                    <p class="text-sm text-blue-300 italic mb-4">"Comment c'est généré ?"</p>
+                    <ul class="text-left text-sm space-y-2 text-slate-200">
+                        <li>• Décrire le <strong>Modèle Génératif</strong></li>
+                        <li>• Définir les <strong>Variables Aléatoires</strong></li>
+                        <li>• Laisser le moteur d'inférence résoudre</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 4: Le Modèle Génératif (Analogie) -->
+    <div class="slide" id="slide-4">
+        <div class="max-w-5xl w-full">
+            <h2 class="text-4xl font-bold mb-8 text-center">Le Modèle : "L'Enquêteur et le Faussaire"</h2>
+            <p class="text-center text-slate-400 mb-12">Pour trouver le motif, on apprend à l'ordinateur à <span class="text-white">fabriquer</span> de fausses séquences.</p>
+
+            <div class="grid grid-cols-3 gap-6 text-center">
+                <!-- Component 1 -->
+                <div class="bg-slate-800 p-6 rounded-xl border-t-4 border-purple-500">
+                    <div class="h-16 w-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-400 text-2xl">
+                        <i class="fas fa-vial"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">La Recette (Le Motif)</h3>
+                    <p class="text-sm text-slate-400 mb-4">A quoi ressemble le motif ?</p>
+                    <div class="code-font text-xs bg-black/30 p-2 rounded text-purple-300">
+                        Variable.Dirichlet(...)
+                    </div>
+                    <p class="text-xs mt-2 text-slate-500">Distribution sur les probabilités des lettres A,C,G,T</p>
+                </div>
+
+                <!-- Component 2 -->
+                <div class="bg-slate-800 p-6 rounded-xl border-t-4 border-yellow-500">
+                    <div class="h-16 w-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-yellow-400 text-2xl">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">La Position</h3>
+                    <p class="text-sm text-slate-400 mb-4">Où est-il caché ?</p>
+                    <div class="code-font text-xs bg-black/30 p-2 rounded text-yellow-300">
+                        Variable.DiscreteUniform(...)
+                    </div>
+                    <p class="text-xs mt-2 text-slate-500">Équiprobable sur toute la longueur</p>
+                </div>
+
+                <!-- Component 3 -->
+                <div class="bg-slate-800 p-6 rounded-xl border-t-4 border-green-500">
+                    <div class="h-16 w-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-400 text-2xl">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <h3 class="font-bold text-lg mb-2">La Présence</h3>
+                    <p class="text-sm text-slate-400 mb-4">Est-il là ? (Pile ou Face)</p>
+                    <div class="code-font text-xs bg-black/30 p-2 rounded text-green-300">
+                        Variable.Bernoulli(...)
+                    </div>
+                    <p class="text-xs mt-2 text-slate-500">Variable Booléenne (Vrai/Faux)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 5: Analyse du Code -->
+    <div class="slide" id="slide-5">
+        <div class="w-full max-w-6xl grid grid-cols-5 gap-8 h-full py-12">
+            <!-- Code Block -->
+            <div class="col-span-3 bg-[#1e1e1e] rounded-lg shadow-2xl overflow-hidden flex flex-col border border-slate-700">
+                <div class="bg-[#252526] px-4 py-2 flex items-center gap-2 border-b border-black/20">
+                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                    <span class="text-xs text-slate-400 ml-2 font-mono">Program.cs</span>
+                </div>
+                <div class="p-4 overflow-y-auto code-font text-sm leading-6 h-full">
+<pre>
+<span class="csharp-comment">// 1. Définition du Priors (La forme du motif est inconnue)</span>
+<span class="csharp-type">var</span> motifCharsRange = <span class="csharp-keyword">new</span> <span class="csharp-type">Range</span>(motifLength);
+motifNucleobaseProbs[motifCharsRange] = <span class="csharp-type">Variable</span>.<span class="csharp-method">Dirichlet</span>(pseudoCounts);
+
+<span class="csharp-comment">// 2. Définition de la Position (Uniforme)</span>
+<span class="csharp-type">var</span> sequenceRange = <span class="csharp-keyword">new</span> <span class="csharp-type">Range</span>(SequenceCount);
+motifPositions[sequenceRange] = <span class="csharp-type">Variable</span>.<span class="csharp-method">DiscreteUniform</span>(length);
+
+<span class="csharp-comment">// 3. Construction Générative (Le "Sandwich")</span>
+<span class="csharp-keyword">using</span> (<span class="csharp-type">Variable</span>.<span class="csharp-method">ForEach</span>(sequenceRange))
+{
+    <span class="csharp-keyword">using</span> (<span class="csharp-type">Variable</span>.<span class="csharp-method">If</span>(motifPresence[sequenceRange]))
+    {
+        <span class="csharp-comment">// On crée le motif à partir des dés pipés (Dirichlet)</span>
+        <span class="csharp-type">var</span> motif = <span class="csharp-type">Variable</span>.<span class="csharp-method">StringFromArray</span>(motifChars);
+        
+        <span class="csharp-comment">// On l'entoure de bruit (Background)</span>
+        sequences[sequenceRange] = backgroundLeft + <span class="highlight-word">motif</span> + backgroundRight;
+    }
+}
+</pre>
+                </div>
+            </div>
+
+            <!-- Explanations -->
+            <div class="col-span-2 flex flex-col justify-center space-y-8">
+                <div class="border-l-4 border-blue-500 pl-4">
+                    <h4 class="font-bold text-blue-400 mb-1">A Priori (Dirichlet)</h4>
+                    <p class="text-sm text-slate-400">On définit une distribution de probabilité sur les caractères. Au début, tout est possible.</p>
+                </div>
+                <div class="border-l-4 border-yellow-500 pl-4">
+                    <h4 class="font-bold text-yellow-400 mb-1">Variables Latentes</h4>
+                    <p class="text-sm text-slate-400">La position et la présence sont inconnues. Le modèle explore toutes les combinaisons.</p>
+                </div>
+                <div class="border-l-4 border-green-500 pl-4">
+                    <h4 class="font-bold text-green-400 mb-1">Le "Sandwich"</h4>
+                    <p class="text-sm text-slate-400">Le cœur du programme : On explique explicitement comment la donnée est construite (Concaténation).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 6: L'Inférence -->
+    <div class="slide" id="slide-6">
+        <div class="max-w-4xl w-full text-center">
+            <h2 class="text-4xl font-bold mb-12">Le Moteur d'Inférence</h2>
+            <p class="text-slate-400 mb-12">Une fois le modèle défini, on fige les données observées et on remonte le temps.</p>
+
+            <div class="flex items-center justify-between relative">
+                <!-- Step 1 -->
+                <div class="w-1/3 bg-slate-800 p-6 rounded-lg border border-slate-700 z-10">
+                    <h3 class="font-bold mb-2">Observed Value</h3>
+                    <p class="text-xs text-slate-400 mb-2">Les séquences réelles</p>
+                    <div class="font-mono text-xs bg-black/20 p-2 rounded">ATGC...<br>CCGT...</div>
+                </div>
+
+                <!-- Arrow -->
+                <div class="flex-1 h-1 bg-slate-600 relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-900 px-2 text-xs text-slate-400">InferenceEngine</div>
+                    <i class="fas fa-chevron-right absolute -right-1 -top-2 text-slate-600"></i>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="w-1/3 bg-blue-900/20 p-6 rounded-lg border border-blue-500 z-10 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+                    <h3 class="font-bold mb-2 text-blue-400">Posterior</h3>
+                    <p class="text-xs text-slate-300 mb-2">La connaissance acquise</p>
+                    <div class="font-mono text-xs text-blue-200">
+                        Pos 1: A (90%)<br>
+                        Pos 2: C (85%)
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 bg-slate-800/50 p-4 rounded-lg inline-block text-left max-w-lg">
+                <p class="code-font text-sm text-green-400">
+                    <span class="text-white">var</span> engine = <span class="text-white">new</span> InferenceEngine();<br>
+                    <span class="text-white">var</span> result = engine.Infer(motifNucleobaseProbs);
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 7: Résultats Visuels -->
+    <div class="slide" id="slide-7">
+        <h2 class="text-3xl font-bold mb-8">Résultats : La Matrice de Poids (PWM)</h2>
+        
+        <div class="bg-white p-8 rounded-lg shadow-2xl text-slate-900 max-w-3xl w-full">
+            <h3 class="text-center font-bold text-xl mb-6 border-b pb-4">Motif Infééré (Probabilités)</h3>
+            
+            <div class="grid grid-cols-7 gap-1 text-center font-mono text-sm">
+                <!-- Header -->
+                <div class="font-bold text-slate-400">Pos</div>
+                <div class="font-bold">1</div>
+                <div class="font-bold">2</div>
+                <div class="font-bold">3</div>
+                <div class="font-bold">4</div>
+                <div class="font-bold">5</div>
+                <div class="font-bold">6</div>
+
+                <!-- Row A -->
+                <div class="font-bold text-green-600">A</div>
+                <div class="bg-green-100 relative group"><span class="relative z-10">0.05</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-20" style="height: 5%"></div></div>
+                <div class="bg-green-100 relative"><span class="relative z-10 font-bold">0.90</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-90" style="height: 90%"></div></div>
+                <div class="bg-green-100 relative"><span class="relative z-10">0.05</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-5%"></div></div>
+                <div class="bg-green-100 relative"><span class="relative z-10">0.10</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-10%"></div></div>
+                <div class="bg-green-100 relative"><span class="relative z-10 font-bold">0.85</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-85" style="height: 85%"></div></div>
+                <div class="bg-green-100 relative"><span class="relative z-10">0.00</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-0%"></div></div>
+
+                <!-- Row C -->
+                <div class="font-bold text-blue-600">C</div>
+                <div class="bg-blue-100 relative"><span class="relative z-10 font-bold">0.80</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-80" style="height: 80%"></div></div>
+                <div class="bg-blue-100 relative"><span class="relative z-10">0.05</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-5%"></div></div>
+                <div class="bg-blue-100 relative"><span class="relative z-10">0.10</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-10%"></div></div>
+                <div class="bg-blue-100 relative"><span class="relative z-10 font-bold">0.80</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-80" style="height: 80%"></div></div>
+                <div class="bg-blue-100 relative"><span class="relative z-10">0.05</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-5%"></div></div>
+                <div class="bg-blue-100 relative"><span class="relative z-10">0.10</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-10%"></div></div>
+
+                <!-- Row G/T truncated for design -->
+                <div class="col-span-7 text-xs text-slate-400 mt-2">... (G et T sont négligeables ici)</div>
+            </div>
+
+            <div class="mt-6 flex justify-center items-center gap-4">
+                <div class="px-4 py-2 bg-slate-100 rounded text-sm">
+                    <strong>Motif Reconstruit :</strong> <span class="font-mono text-lg text-blue-600 tracking-widest">CACCA</span>
+                </div>
+                <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 8: Expérimentation (Stress Test 1) -->
+    <div class="slide" id="slide-8">
+        <div class="w-full max-w-5xl">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="bg-red-500 p-3 rounded-lg"><i class="fas fa-flask text-white text-xl"></i></div>
+                <h2 class="text-3xl font-bold">Expérimentation : Résistance au Bruit</h2>
+            </div>
+            
+            <p class="mb-8 text-slate-300">Que se passe-t-il si on augmente la longueur des chaînes (plus de bruit) ?</p>
+
+            <div class="grid grid-cols-2 gap-12">
+                <div class="space-y-6">
+                    <!-- Bar Chart Simulation -->
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span>Longueur = 25 (Standard)</span> <span class="text-green-400">100% Précision</span></div>
+                        <div class="w-full bg-slate-700 h-4 rounded-full overflow-hidden">
+                            <div class="bg-green-500 h-full w-full"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span>Longueur = 100</span> <span class="text-green-400">98% Précision</span></div>
+                        <div class="w-full bg-slate-700 h-4 rounded-full overflow-hidden">
+                            <div class="bg-green-500 h-full w-[98%]"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span>Longueur = 500</span> <span class="text-yellow-400">75% Précision</span></div>
+                        <div class="w-full bg-slate-700 h-4 rounded-full overflow-hidden">
+                            <div class="bg-yellow-500 h-full w-[75%]"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-sm mb-1"><span>Longueur = 1000</span> <span class="text-red-400">30% Précision</span></div>
+                        <div class="w-full bg-slate-700 h-4 rounded-full overflow-hidden">
+                            <div class="bg-red-500 h-full w-[30%]"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 text-sm">
+                    <h3 class="font-bold text-white mb-4"><i class="fas fa-search-dollar text-blue-400 mr-2"></i>Analyse</h3>
+                    <p class="text-slate-300 mb-4">
+                        Plus la séquence est longue, plus la probabilité qu'un motif aléatoire ("faux positif") apparaisse dans le bruit augmente.
+                    </p>
+                    <p class="text-slate-300">
+                        <strong>Limite observée :</strong> Autour de 500 caractères, le signal du motif se dilue trop par rapport au volume de bruit avec seulement 70 séquences.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 9: Expérimentation (Stress Test 2) -->
+    <div class="slide" id="slide-9">
+        <div class="w-full max-w-5xl">
+            <div class="flex items-center gap-4 mb-8">
+                <div class="bg-orange-500 p-3 rounded-lg"><i class="fas fa-database text-white text-xl"></i></div>
+                <h2 class="text-3xl font-bold">Expérimentation : Quantité de Données</h2>
+            </div>
+            
+            <p class="mb-8 text-slate-300">Combien de séquences minimum faut-il pour apprendre ?</p>
+
+            <div class="flex items-end justify-center gap-8 h-64 border-b border-slate-700 pb-4 mb-4">
+                <div class="w-24 bg-red-500/50 hover:bg-red-500 transition-all h-[20%] relative group rounded-t">
+                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 font-bold text-red-400">Bad</span>
+                    <span class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white">5 seqs</span>
+                </div>
+                <div class="w-24 bg-yellow-500/50 hover:bg-yellow-500 transition-all h-[50%] relative group rounded-t">
+                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 font-bold text-yellow-400">Moyen</span>
+                    <span class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white">15 seqs</span>
+                </div>
+                <div class="w-24 bg-green-500/50 hover:bg-green-500 transition-all h-[95%] relative group rounded-t">
+                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 font-bold text-green-400">Excellent</span>
+                    <span class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white">50 seqs</span>
+                </div>
+                <div class="w-24 bg-green-500/50 hover:bg-green-500 transition-all h-[98%] relative group rounded-t">
+                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 font-bold text-green-400">Parfait</span>
+                    <span class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white">100 seqs</span>
+                </div>
+            </div>
+            <p class="text-center text-slate-400 italic">Hauteur = Conférence du modèle (Posterior Mean)</p>
+
+            <div class="mt-8 text-center text-slate-300 max-w-2xl mx-auto">
+                Le modèle converge très vite. Dès <strong>20-30 séquences</strong>, le motif émerge clairement du bruit, ce qui prouve la puissance de l'approche bayésienne sur des petits datasets.
+            </div>
+        </div>
+    </div>
+
+    <!-- SLIDE 10: Conclusion -->
+    <div class="slide" id="slide-10">
+        <div class="max-w-4xl text-center">
+            <h2 class="text-5xl font-bold mb-12 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">Conclusion</h2>
+            
+            <div class="grid grid-cols-2 gap-8 text-left">
+                <div class="bg-slate-800 p-8 rounded-xl border border-green-500/30">
+                    <h3 class="text-xl font-bold text-green-400 mb-4"><i class="fas fa-thumbs-up mr-2"></i>Points Forts</h3>
+                    <ul class="space-y-3 text-slate-300">
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Code déclaratif et concis.</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Gère naturellement l'incertitude.</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Robuste aux petits jeux de données.</li>
+                    </ul>
+                </div>
+
+                <div class="bg-slate-800 p-8 rounded-xl border border-red-500/30">
+                    <h3 class="text-xl font-bold text-red-400 mb-4"><i class="fas fa-exclamation-triangle mr-2"></i>Limites</h3>
+                    <ul class="space-y-3 text-slate-300">
+                        <li><i class="fas fa-times text-red-500 mr-2"></i>Complexité exponentielle avec la longueur.</li>
+                        <li><i class="fas fa-times text-red-500 mr-2"></i>Nécessite de définir les "Priors" correctement.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mt-16">
+                <p class="text-slate-400 mb-4">Questions ?</p>
+                <button onclick="currentSlide = 0; updateSlides()" class="px-6 py-2 border border-slate-600 rounded-full text-slate-400 hover:text-white hover:border-white transition">
+                    <i class="fas fa-redo mr-2"></i>Recommencer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= SLIDES END ================= -->
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const progressBar = document.getElementById('progress-bar');
+        const slideNumberDisplay = document.getElementById('slide-number');
+        const totalSlidesDisplay = document.getElementById('total-slides');
+
+        totalSlidesDisplay.innerText = slides.length;
+
+        function updateSlides() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev');
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else if (index < currentSlide) {
+                    slide.classList.add('prev');
+                }
+            });
+
+            // Update Progress Bar
+            const progress = ((currentSlide + 1) / slides.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            
+            // Update Number
+            slideNumberDisplay.innerText = currentSlide + 1;
+        }
+
+        function nextSlide() {
+            if (currentSlide < slides.length - 1) {
+                currentSlide++;
+                updateSlides();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                currentSlide--;
+                updateSlides();
+            }
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                nextSlide();
+            } else if (e.key === 'ArrowLeft') {
+                prevSlide();
+            }
+        });
+
+        // Initialize
+        updateSlides();
+    </script>
+</body>
+</html>

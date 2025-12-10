@@ -1,593 +1,791 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Identification de Motifs - Infer.Net</title>
-    <!-- Tailwind CSS pour le style rapide -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome pour les icones -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Favicon SVG (L bleu) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22 font-family=%22sans-serif%22 font-weight=%22bold%22 fill=%22%230ea5e9%22>L</text></svg>">
     
+    <title>Portfolio - Léo-Paul Moussally</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;500;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <!-- Icônes Phosphor pour remplacer les images manquantes -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['League Spartan', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            light: '#e0f2fe', // sky-100
+                            DEFAULT: '#0ea5e9', // sky-500
+                            dark: '#0369a1', // sky-700
+                        }
+                    },
+                    animation: {
+                        'float': 'float 10s infinite ease-in-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a; /* Slate 900 */
-            color: #e2e8f0;
-            overflow: hidden;
-        }
-
-        .code-font {
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        /* Slide Transitions */
-        .slide {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            transform: translateX(100%);
-            transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        /* Loader styles */
+        #preloader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background-color: #ffffff;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
-            padding: 2rem;
-            visibility: hidden;
+            justify-content: center;
+            transition: opacity 0.6s ease-out, visibility 0.6s ease-out;
         }
-
-        .slide.active {
-            opacity: 1;
-            transform: translateX(0);
-            visibility: visible;
-            z-index: 10;
-        }
-
-        .slide.prev {
-            transform: translateX(-100%);
+        #preloader.hidden-loader {
             opacity: 0;
             visibility: hidden;
         }
 
-        /* DNA Background Animation */
-        .dna-bg {
+        .blob {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            opacity: 0.05;
-            background-image: radial-gradient(#38bdf8 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-
-        /* Custom Scrollbar for code blocks */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1e293b; 
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #475569; 
-            border-radius: 4px;
-        }
-
-        .highlight-word {
-            color: #38bdf8; /* Sky 400 */
-            font-weight: bold;
+            filter: blur(80px);
+            z-index: -1;
+            opacity: 0.5;
+            transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         
-        .csharp-keyword { color: #c678dd; } /* Purple */
-        .csharp-type { color: #e5c07b; } /* Yellow */
-        .csharp-string { color: #98c379; } /* Green */
-        .csharp-comment { color: #5c6370; font-style: italic; } /* Grey */
-        .csharp-method { color: #61afef; } /* Blue */
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 30px -10px rgb(14 165 233 / 0.15);
+        }
+        
+        /* Modal Styles */
+        .modal {
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
 
+        /* Scroll Reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .delay-100 { transition-delay: 0.1s; }
+        .delay-200 { transition-delay: 0.2s; }
+        .delay-300 { transition-delay: 0.3s; }
+
+        /* Typing cursor */
+        .typing-cursor::after {
+            content: '|';
+            animation: blink 1s step-start infinite;
+            color: #0ea5e9;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* Nav link active */
+        .nav-link.active {
+            color: #0ea5e9;
+            font-weight: 600;
+        }
+        
+        /* Skill Tag Hover */
+        .skill-tag {
+            transition: all 0.2s;
+        }
+        .skill-tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+
+        /* Flip Cards */
+        .flip-card {
+            background-color: transparent;
+            width: 100%;
+            height: 80px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flip-card.flipped .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+        }
+        .flip-card-front {
+            background-color: white;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+        }
+        .flip-card-back {
+            background-color: #0ea5e9;
+            color: white;
+            transform: rotateY(180deg);
+            border: 1px solid #0ea5e9;
+        }
     </style>
 </head>
-<body class="antialiased h-screen w-screen relative">
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-brand selection:text-white overflow-x-hidden">
 
-    <!-- Background Pattern -->
-    <div class="dna-bg"></div>
-
-    <!-- Progress Bar -->
-    <div class="fixed top-0 left-0 h-1 bg-blue-500 transition-all duration-300 z-50" id="progress-bar" style="width: 0%"></div>
-
-    <!-- Navigation Controls (Bottom Right) -->
-    <div class="fixed bottom-8 right-8 z-50 flex gap-4">
-        <button onclick="prevSlide()" class="p-3 bg-slate-800 hover:bg-slate-700 rounded-full text-white transition shadow-lg border border-slate-600">
-            <i class="fas fa-chevron-left"></i>
-        </button>
-        <button onclick="nextSlide()" class="p-3 bg-blue-600 hover:bg-blue-500 rounded-full text-white transition shadow-lg shadow-blue-500/30">
-            <i class="fas fa-chevron-right"></i>
-        </button>
-    </div>
-
-    <!-- Slide Counter -->
-    <div class="fixed bottom-8 left-8 z-50 text-slate-500 font-mono text-sm">
-        SLIDE <span id="slide-number">1</span> / <span id="total-slides">10</span>
-    </div>
-
-    <!-- ================= SLIDES START ================= -->
-
-    <!-- SLIDE 1: Title -->
-    <div class="slide active" id="slide-1">
-        <div class="text-center max-w-4xl relative z-10">
-            <div class="inline-block p-4 rounded-full bg-blue-500/10 mb-6 border border-blue-500/20">
-                <i class="fas fa-dna text-4xl text-blue-400"></i>
+    <!-- PRELOADER -->
+    <div id="preloader">
+        <div class="text-center">
+            <div class="text-4xl md:text-6xl font-bold font-display tracking-tight text-slate-900 mb-2">
+                MOUSSALLY<span class="text-brand">.</span>
             </div>
-            <h1 class="text-6xl font-extrabold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-                Identification de Motifs Génétiques
+            <div class="h-1 w-16 bg-brand mx-auto rounded-full animate-pulse"></div>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 transition-all duration-300" id="navbar">
+        <div class="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" onclick="scrollToTop(); return false;" class="text-xl font-bold tracking-tight text-slate-900 font-display hover:opacity-80 transition">MOUSSALLY<span class="text-brand">.</span></a>
+            <div class="hidden md:flex gap-8 text-sm font-medium text-slate-600">
+                <a href="#about" class="nav-link hover:text-brand transition relative group">
+                    À propos
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand transition-all group-hover:w-full"></span>
+                </a>
+                <a href="#experience" class="nav-link hover:text-brand transition relative group">
+                    Expérience
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand transition-all group-hover:w-full"></span>
+                </a>
+                <a href="#skills" class="nav-link hover:text-brand transition relative group">
+                    Compétences
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand transition-all group-hover:w-full"></span>
+                </a>
+                <a href="#projets" class="nav-link hover:text-brand transition relative group">
+                    Projets
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand transition-all group-hover:w-full"></span>
+                </a>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                 <!-- LinkedIn Icon -->
+                <a href="https://linkedin.com/in/leo-paul-moussally" target="_blank" class="hidden sm:flex text-slate-400 hover:text-[#0077b5] transition transform hover:scale-110">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                </a>
+                <a href="mailto:leo-paul.moussally@epfedu.fr" class="bg-slate-900 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-slate-800 transition shadow-lg shadow-slate-900/20 hover:-translate-y-0.5">
+                    Me Contacter
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="min-h-screen flex items-center justify-center pt-28 pb-20 relative overflow-hidden">
+        <!-- Background Blobs -->
+        <div data-speed="0.05" class="blob bg-sky-300 w-96 h-96 rounded-full top-0 left-0 translate-y-1/2 -translate-x-1/4 mix-blend-multiply"></div>
+        <div data-speed="0.08" class="blob bg-indigo-200 w-80 h-80 rounded-full bottom-0 right-0 -translate-y-1/2 translate-x-1/4 mix-blend-multiply"></div>
+        <div data-speed="0.02" class="blob bg-purple-100 w-64 h-64 rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mix-blend-multiply opacity-30"></div>
+
+        <div class="max-w-4xl mx-auto px-6 text-center relative z-10">
+            
+            <!-- Avatar (Remplacement de la photo) -->
+            <div class="mb-8 relative inline-block reveal active group">
+                <div class="absolute inset-0 bg-brand blur-2xl opacity-20 rounded-full transform scale-110 group-hover:opacity-40 transition-opacity duration-500"></div>
+                <!-- Cercle avec Initiales au lieu de photo -->
+                <div class="relative w-32 h-32 md:w-44 md:h-44 rounded-full bg-white border-4 border-white shadow-xl mx-auto ring-1 ring-slate-100 flex items-center justify-center transform transition duration-500 group-hover:scale-105 overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
+                    <span class="text-4xl md:text-6xl font-display font-bold text-slate-900 tracking-tighter">LM<span class="text-brand">.</span></span>
+                </div>
+            </div>
+
+            <div class="block mb-6 reveal delay-100 active">
+                <div class="inline-block px-4 py-1.5 rounded-full bg-sky-50 text-brand-dark text-sm font-bold border border-sky-100 shadow-sm flex items-center gap-2 mx-auto w-fit hover:bg-sky-100 transition cursor-default">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-sky-500"></span>
+                    </span>
+                     Recherche Stage PFE Ingénieur • Février 2026
+                </div>
+            </div>
+
+            <h1 class="text-5xl md:text-7xl font-bold mb-6 text-slate-900 font-display tracking-tight leading-tight reveal delay-200 active">
+                Léo-Paul <br> <span class="text-brand">Moussally</span>
             </h1>
-            <h2 class="text-3xl text-slate-400 font-light mb-12">
-                Approche par Programmation Probabiliste avec <span class="text-white font-semibold">Infer.Net</span>
-            </h2>
             
-            <div class="flex justify-center gap-12 text-left text-slate-300 mt-12 border-t border-slate-700 pt-8">
-                <div>
-                    <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Module</p>
-                    <p class="font-semibold">Programmation Probabiliste & ML</p>
-                </div>
-                <div>
-                    <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Sujet</p>
-                    <p class="font-semibold">Option 1 : Analyse & Expérimentation</p>
-                </div>
-                <div>
-                    <p class="text-xs uppercase tracking-widest text-slate-500 mb-1">Outil</p>
-                    <p class="font-semibold text-blue-400">Microsoft Infer.Net (C#)</p>
-                </div>
-            </div>
-        </div>
-    </div>
+            <!-- Typing Effect Container -->
+            <p class="text-xl text-slate-500 mb-2 font-medium reveal delay-300 active min-h-[1.75rem]">
+                <span id="typewriter" class="typing-cursor"></span>
+            </p>
 
-    <!-- SLIDE 2: Le Problème -->
-    <div class="slide" id="slide-2">
-        <div class="max-w-6xl w-full grid grid-cols-2 gap-12 items-center">
-            <div>
-                <h3 class="text-blue-400 text-sm font-bold tracking-widest uppercase mb-2">Contexte Biologique</h3>
-                <h2 class="text-4xl font-bold mb-6">Chercher une aiguille dans une botte de foin (ADN)</h2>
-                <p class="text-lg text-slate-300 mb-6 leading-relaxed">
-                    Un <span class="highlight-word">Motif</span> est une courte séquence d'ADN (ex: facteur de transcription) qui se répète et possède une fonction biologique.
-                </p>
-                <ul class="space-y-4 text-slate-300">
-                    <li class="flex items-start">
-                        <i class="fas fa-times-circle text-red-400 mt-1 mr-3"></i>
-                        <span><strong>Problème :</strong> Le motif n'est pas identique à chaque fois (mutations). Une simple recherche de texte (CTRL+F) échoue.</span>
-                    </li>
-                    <li class="flex items-start">
-                        <i class="fas fa-layer-group text-blue-400 mt-1 mr-3"></i>
-                        <span><strong>Données :</strong> Nous avons des centaines de séquences bruitées (A, C, G, T) et nous ignorons <em>où</em> est le motif et <em>à quoi</em> il ressemble exactement.</span>
-                    </li>
-                </ul>
-            </div>
-            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-2xl relative overflow-hidden">
-                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>
-                <div class="code-font text-sm space-y-2 opacity-80">
-                    <p class="text-slate-500">// Sequence 1</p>
-                    <p>ATGC<span class="bg-yellow-500/30 text-yellow-300 font-bold px-1 rounded">AGTA</span>CCCGTTAGCT...</p>
-                    <p class="text-slate-500">// Sequence 2</p>
-                    <p>TTGGCCAA<span class="bg-yellow-500/30 text-yellow-300 font-bold px-1 rounded">AGTC</span>GGT...</p>
-                    <p class="text-slate-500">// Sequence 3 (Pas de motif ?)</p>
-                    <p>CCGGTTAACCGGTTA...</p>
-                    <p class="text-slate-500">// Sequence 4</p>
-                    <p><span class="bg-yellow-500/30 text-yellow-300 font-bold px-1 rounded">ACTA</span>GGCCTTAAGGCC...</p>
-                </div>
-                <div class="mt-4 text-center">
-                    <i class="fas fa-arrow-up text-yellow-400 animate-bounce"></i>
-                    <p class="text-xs text-yellow-400 mt-1">Le Motif caché (similaire mais varié)</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- SLIDE 3: L'Approche Probabiliste -->
-    <div class="slide" id="slide-3">
-        <div class="text-center max-w-4xl">
-            <h2 class="text-4xl font-bold mb-12">Le Changement de Paradigme</h2>
+            <p class="text-lg text-slate-500 mb-8 max-w-2xl mx-auto font-light leading-relaxed reveal delay-300 active">
+                Étudiant ingénieur en dernière année à l'EPF (Majeure Ingénierie & Santé). Passionné par le développement de solutions technologiques innovantes, je recherche un stage de fin d'études de 6 mois à l'interface entre ingénierie, numérique et médical.
+            </p>
             
-            <div class="grid grid-cols-2 gap-8">
-                <!-- Old Way -->
-                <div class="p-8 rounded-2xl bg-slate-800/50 border border-slate-700 grayscale opacity-70 hover:opacity-100 transition duration-500">
-                    <div class="text-4xl mb-4 text-slate-400"><i class="fas fa-code"></i></div>
-                    <h3 class="text-xl font-bold mb-2">Approche Algorithmique</h3>
-                    <p class="text-sm text-slate-400 italic mb-4">"Comment trouver ?"</p>
-                    <ul class="text-left text-sm space-y-2 text-slate-300">
-                        <li>• Écrire des boucles complexes</li>
-                        <li>• Gérer les cas limites manuellement</li>
-                        <li>• Difficile à modifier si le modèle change</li>
-                    </ul>
-                </div>
+            <!-- Liens Sociaux & CV -->
+            <div class="flex justify-center gap-4 mb-10 reveal delay-300 active">
+                 <a href="https://linkedin.com/in/leo-paul-moussally" target="_blank" class="p-2 text-slate-400 hover:text-[#0077b5] hover:bg-sky-50 rounded-full transition transform hover:scale-110" title="LinkedIn">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                </a>
+                
+                 <!-- Bouton CV (Placeholder lien) -->
+                 <a href="CV_LEOPAUL_MOUSSALLY_2026.pdf" class="flex items-center gap-2 px-4 py-1.5 text-sm font-semibold text-brand bg-brand/10 hover:bg-brand/20 rounded-full transition border border-brand/20 hover:-translate-y-1" download>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Télécharger CV
+                </a>
+            </div>
 
-                <!-- New Way -->
-                <div class="p-8 rounded-2xl bg-gradient-to-b from-slate-800 to-blue-900/20 border border-blue-500/30 shadow-lg shadow-blue-500/10 transform scale-105">
-                    <div class="text-4xl mb-4 text-blue-400"><i class="fas fa-dice-d20"></i></div>
-                    <h3 class="text-xl font-bold mb-2 text-white">Programmation Probabiliste</h3>
-                    <p class="text-sm text-blue-300 italic mb-4">"Comment c'est généré ?"</p>
-                    <ul class="text-left text-sm space-y-2 text-slate-200">
-                        <li>• Décrire le <strong>Modèle Génératif</strong></li>
-                        <li>• Définir les <strong>Variables Aléatoires</strong></li>
-                        <li>• Laisser le moteur d'inférence résoudre</li>
-                    </ul>
-                </div>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center reveal delay-300 active">
+                <a href="#projets" class="w-full sm:w-auto px-8 py-3.5 bg-brand text-white rounded-full font-semibold hover:bg-sky-600 transition shadow-lg shadow-sky-500/30 transform hover:scale-105 duration-200">
+                    Voir mes projets
+                </a>
+                
+                <button onclick="toggleModal()" class="w-full sm:w-auto px-8 py-3.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full font-semibold hover:bg-indigo-100 transition flex items-center justify-center gap-2 transform hover:scale-105 duration-200">
+                    <span></span> Ce qui m'anime
+                </button>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- SLIDE 4: Le Modèle Génératif (Analogie) -->
-    <div class="slide" id="slide-4">
-        <div class="max-w-5xl w-full">
-            <h2 class="text-4xl font-bold mb-8 text-center">Le Modèle : "L'Enquêteur et le Faussaire"</h2>
-            <p class="text-center text-slate-400 mb-12">Pour trouver le motif, on apprend à l'ordinateur à <span class="text-white">fabriquer</span> de fausses séquences.</p>
-
-            <div class="grid grid-cols-3 gap-6 text-center">
-                <!-- Component 1 -->
-                <div class="bg-slate-800 p-6 rounded-xl border-t-4 border-purple-500">
-                    <div class="h-16 w-16 bg-purple-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-purple-400 text-2xl">
-                        <i class="fas fa-vial"></i>
-                    </div>
-                    <h3 class="font-bold text-lg mb-2">La Recette (Le Motif)</h3>
-                    <p class="text-sm text-slate-400 mb-4">A quoi ressemble le motif ?</p>
-                    <div class="code-font text-xs bg-black/30 p-2 rounded text-purple-300">
-                        Variable.Dirichlet(...)
-                    </div>
-                    <p class="text-xs mt-2 text-slate-500">Distribution sur les probabilités des lettres A,C,G,T</p>
-                </div>
-
-                <!-- Component 2 -->
-                <div class="bg-slate-800 p-6 rounded-xl border-t-4 border-yellow-500">
-                    <div class="h-16 w-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-yellow-400 text-2xl">
-                        <i class="fas fa-map-marked-alt"></i>
-                    </div>
-                    <h3 class="font-bold text-lg mb-2">La Position</h3>
-                    <p class="text-sm text-slate-400 mb-4">Où est-il caché ?</p>
-                    <div class="code-font text-xs bg-black/30 p-2 rounded text-yellow-300">
-                        Variable.DiscreteUniform(...)
-                    </div>
-                    <p class="text-xs mt-2 text-slate-500">Équiprobable sur toute la longueur</p>
-                </div>
-
-                <!-- Component 3 -->
-                <div class="bg-slate-800 p-6 rounded-xl border-t-4 border-green-500">
-                    <div class="h-16 w-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-green-400 text-2xl">
-                        <i class="fas fa-coins"></i>
-                    </div>
-                    <h3 class="font-bold text-lg mb-2">La Présence</h3>
-                    <p class="text-sm text-slate-400 mb-4">Est-il là ? (Pile ou Face)</p>
-                    <div class="code-font text-xs bg-black/30 p-2 rounded text-green-300">
-                        Variable.Bernoulli(...)
-                    </div>
-                    <p class="text-xs mt-2 text-slate-500">Variable Booléenne (Vrai/Faux)</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- SLIDE 5: Analyse du Code -->
-    <div class="slide" id="slide-5">
-        <div class="w-full max-w-6xl grid grid-cols-5 gap-8 h-full py-12">
-            <!-- Code Block -->
-            <div class="col-span-3 bg-[#1e1e1e] rounded-lg shadow-2xl overflow-hidden flex flex-col border border-slate-700">
-                <div class="bg-[#252526] px-4 py-2 flex items-center gap-2 border-b border-black/20">
-                    <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                    <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                    <div class="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span class="text-xs text-slate-400 ml-2 font-mono">Program.cs</span>
-                </div>
-                <div class="p-4 overflow-y-auto code-font text-sm leading-6 h-full">
-<pre>
-<span class="csharp-comment">// 1. Définition du Priors (La forme du motif est inconnue)</span>
-<span class="csharp-type">var</span> motifCharsRange = <span class="csharp-keyword">new</span> <span class="csharp-type">Range</span>(motifLength);
-motifNucleobaseProbs[motifCharsRange] = <span class="csharp-type">Variable</span>.<span class="csharp-method">Dirichlet</span>(pseudoCounts);
-
-<span class="csharp-comment">// 2. Définition de la Position (Uniforme)</span>
-<span class="csharp-type">var</span> sequenceRange = <span class="csharp-keyword">new</span> <span class="csharp-type">Range</span>(SequenceCount);
-motifPositions[sequenceRange] = <span class="csharp-type">Variable</span>.<span class="csharp-method">DiscreteUniform</span>(length);
-
-<span class="csharp-comment">// 3. Construction Générative (Le "Sandwich")</span>
-<span class="csharp-keyword">using</span> (<span class="csharp-type">Variable</span>.<span class="csharp-method">ForEach</span>(sequenceRange))
-{
-    <span class="csharp-keyword">using</span> (<span class="csharp-type">Variable</span>.<span class="csharp-method">If</span>(motifPresence[sequenceRange]))
-    {
-        <span class="csharp-comment">// On crée le motif à partir des dés pipés (Dirichlet)</span>
-        <span class="csharp-type">var</span> motif = <span class="csharp-type">Variable</span>.<span class="csharp-method">StringFromArray</span>(motifChars);
+    <!-- MODAL (POP-UP) -->
+    <div id="inspirationModal" class="modal fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="toggleModal()"></div>
         
-        <span class="csharp-comment">// On l'entoure de bruit (Background)</span>
-        sequences[sequenceRange] = backgroundLeft + <span class="highlight-word">motif</span> + backgroundRight;
-    }
-}
-</pre>
-                </div>
-            </div>
-
-            <!-- Explanations -->
-            <div class="col-span-2 flex flex-col justify-center space-y-8">
-                <div class="border-l-4 border-blue-500 pl-4">
-                    <h4 class="font-bold text-blue-400 mb-1">A Priori (Dirichlet)</h4>
-                    <p class="text-sm text-slate-400">On définit une distribution de probabilité sur les caractères. Au début, tout est possible.</p>
-                </div>
-                <div class="border-l-4 border-yellow-500 pl-4">
-                    <h4 class="font-bold text-yellow-400 mb-1">Variables Latentes</h4>
-                    <p class="text-sm text-slate-400">La position et la présence sont inconnues. Le modèle explore toutes les combinaisons.</p>
-                </div>
-                <div class="border-l-4 border-green-500 pl-4">
-                    <h4 class="font-bold text-green-400 mb-1">Le "Sandwich"</h4>
-                    <p class="text-sm text-slate-400">Le cœur du programme : On explique explicitement comment la donnée est construite (Concaténation).</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- SLIDE 6: L'Inférence -->
-    <div class="slide" id="slide-6">
-        <div class="max-w-4xl w-full text-center">
-            <h2 class="text-4xl font-bold mb-12">Le Moteur d'Inférence</h2>
-            <p class="text-slate-400 mb-12">Une fois le modèle défini, on fige les données observées et on remonte le temps.</p>
-
-            <div class="flex items-center justify-between relative">
-                <!-- Step 1 -->
-                <div class="w-1/3 bg-slate-800 p-6 rounded-lg border border-slate-700 z-10">
-                    <h3 class="font-bold mb-2">Observed Value</h3>
-                    <p class="text-xs text-slate-400 mb-2">Les séquences réelles</p>
-                    <div class="font-mono text-xs bg-black/20 p-2 rounded">ATGC...<br>CCGT...</div>
-                </div>
-
-                <!-- Arrow -->
-                <div class="flex-1 h-1 bg-slate-600 relative">
-                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-900 px-2 text-xs text-slate-400">InferenceEngine</div>
-                    <i class="fas fa-chevron-right absolute -right-1 -top-2 text-slate-600"></i>
-                </div>
-
-                <!-- Step 2 -->
-                <div class="w-1/3 bg-blue-900/20 p-6 rounded-lg border border-blue-500 z-10 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
-                    <h3 class="font-bold mb-2 text-blue-400">Posterior</h3>
-                    <p class="text-xs text-slate-300 mb-2">La connaissance acquise</p>
-                    <div class="font-mono text-xs text-blue-200">
-                        Pos 1: A (90%)<br>
-                        Pos 2: C (85%)
-                    </div>
-                </div>
-            </div>
-
-            <div class="mt-12 bg-slate-800/50 p-4 rounded-lg inline-block text-left max-w-lg">
-                <p class="code-font text-sm text-green-400">
-                    <span class="text-white">var</span> engine = <span class="text-white">new</span> InferenceEngine();<br>
-                    <span class="text-white">var</span> result = engine.Infer(motifNucleobaseProbs);
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <!-- SLIDE 7: Résultats Visuels -->
-    <div class="slide" id="slide-7">
-        <h2 class="text-3xl font-bold mb-8">Résultats : La Matrice de Poids (PWM)</h2>
-        
-        <div class="bg-white p-8 rounded-lg shadow-2xl text-slate-900 max-w-3xl w-full">
-            <h3 class="text-center font-bold text-xl mb-6 border-b pb-4">Motif Infééré (Probabilités)</h3>
+        <div class="modal-content bg-white w-full max-w-2xl rounded-3xl shadow-2xl relative z-10 overflow-hidden max-h-[90vh] overflow-y-auto transform transition-all">
             
-            <div class="grid grid-cols-7 gap-1 text-center font-mono text-sm">
-                <!-- Header -->
-                <div class="font-bold text-slate-400">Pos</div>
-                <div class="font-bold">1</div>
-                <div class="font-bold">2</div>
-                <div class="font-bold">3</div>
-                <div class="font-bold">4</div>
-                <div class="font-bold">5</div>
-                <div class="font-bold">6</div>
-
-                <!-- Row A -->
-                <div class="font-bold text-green-600">A</div>
-                <div class="bg-green-100 relative group"><span class="relative z-10">0.05</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-20" style="height: 5%"></div></div>
-                <div class="bg-green-100 relative"><span class="relative z-10 font-bold">0.90</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-90" style="height: 90%"></div></div>
-                <div class="bg-green-100 relative"><span class="relative z-10">0.05</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-5%"></div></div>
-                <div class="bg-green-100 relative"><span class="relative z-10">0.10</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-10%"></div></div>
-                <div class="bg-green-100 relative"><span class="relative z-10 font-bold">0.85</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-85" style="height: 85%"></div></div>
-                <div class="bg-green-100 relative"><span class="relative z-10">0.00</span><div class="absolute bottom-0 left-0 w-full bg-green-500 opacity-0%"></div></div>
-
-                <!-- Row C -->
-                <div class="font-bold text-blue-600">C</div>
-                <div class="bg-blue-100 relative"><span class="relative z-10 font-bold">0.80</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-80" style="height: 80%"></div></div>
-                <div class="bg-blue-100 relative"><span class="relative z-10">0.05</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-5%"></div></div>
-                <div class="bg-blue-100 relative"><span class="relative z-10">0.10</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-10%"></div></div>
-                <div class="bg-blue-100 relative"><span class="relative z-10 font-bold">0.80</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-80" style="height: 80%"></div></div>
-                <div class="bg-blue-100 relative"><span class="relative z-10">0.05</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-5%"></div></div>
-                <div class="bg-blue-100 relative"><span class="relative z-10">0.10</span><div class="absolute bottom-0 left-0 w-full bg-blue-500 opacity-10%"></div></div>
-
-                <!-- Row G/T truncated for design -->
-                <div class="col-span-7 text-xs text-slate-400 mt-2">... (G et T sont négligeables ici)</div>
+            <div class="bg-gradient-to-r from-brand to-indigo-500 p-6 flex justify-between items-center sticky top-0 z-20">
+                <h3 class="text-white text-xl font-bold font-display">Centres d'intérêt</h3>
+                <button onclick="toggleModal()" class="text-white/80 hover:text-white transition p-2 bg-white/10 rounded-full hover:bg-white/20">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
 
-            <div class="mt-6 flex justify-center items-center gap-4">
-                <div class="px-4 py-2 bg-slate-100 rounded text-sm">
-                    <strong>Motif Reconstruit :</strong> <span class="font-mono text-lg text-blue-600 tracking-widest">CACCA</span>
+            <div class="p-8 space-y-8">
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-brand/30 transition-colors">
+                    <h4 class="text-xl font-bold text-slate-900 mb-3 flex items-center gap-2">
+                        Technologie & Innovation
+                    </h4>
+                    <p class="text-slate-600 leading-relaxed text-justify">
+                        Passionné par la <strong>Conception CAO</strong> et l'<strong>Impression 3D</strong>, j'aime matérialiser mes idées. La robotique me fascine également pour son potentiel à transformer le secteur médical.
+                    </p>
                 </div>
-                <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-brand/30 transition-colors">
+                    <h4 class="text-xl font-bold text-slate-900 mb-3 flex items-center gap-2">
+                        Design & Créativité
+                    </h4>
+                    <p class="text-slate-600 leading-relaxed text-justify">
+                        De la modélisation 3D à l'<strong>horlogerie mécanique</strong>, j'apprécie la précision et les mécanismes complexes. Mes projets DIY sont l'occasion de mêler technique et esthétique.
+                    </p>
+                </div>
+
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 hover:border-brand/30 transition-colors">
+                    <h4 class="text-xl font-bold text-slate-900 mb-3 flex items-center gap-2">
+                         Sport & Esprit d'équipe
+                    </h4>
+                    <p class="text-slate-600 leading-relaxed text-justify">
+                        Pratiquant la musculation et la course à pied, j'aime le dépassement de soi. Les jeux en ligne nourrissent par ailleurs mon esprit d'équipe et de compétitivité.
+                    </p>
+                </div>
+
+                <div class="pt-4 text-center">
+                    <button onclick="toggleModal()" class="text-sm font-semibold text-slate-500 hover:text-brand underline decoration-2 underline-offset-4">Fermer</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 8: Expérimentation (Stress Test 1) -->
-    <div class="slide" id="slide-8">
-        <div class="w-full max-w-5xl">
-            <div class="flex items-center gap-4 mb-8">
-                <div class="bg-red-500 p-3 rounded-lg"><i class="fas fa-flask text-white text-xl"></i></div>
-                <h2 class="text-3xl font-bold">Expérimentation : Résistance au Bruit</h2>
-            </div>
-            
-            <p class="mb-8 text-slate-300">Que se passe-t-il si on augmente la longueur des chaînes (plus de bruit) ?</p>
+    <!-- Section À Propos & Formation -->
+    <section id="about" class="py-24 bg-white relative">
+        <div class="max-w-5xl mx-auto px-6">
+            <div class="grid md:grid-cols-2 gap-16 items-start">
+                <div class="reveal">
+                    <h2 class="text-4xl font-bold font-display mb-6 text-slate-900">À propos</h2>
+                    <p class="text-slate-600 text-lg mb-6 leading-relaxed">
+                        Actuellement en <strong>Master 2 Ingénierie & Santé</strong> (Cycle Ingénieur Généraliste) à l'EPF.
+                    </p>
+                    <p class="text-slate-600 text-lg mb-8 leading-relaxed">
+                        Grâce à mes expériences en conception 3D, simulation numérique et gestion de projet médical, je souhaite mettre mes compétences au service d'un <strong>Stage de Fin d'Études (PFE)</strong>. Je suis mobile et disponible dès février 2026.
+                    </p>
+                    
+                    <div class="mt-8">
+                        <h3 class="font-bold text-slate-900 mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" /></svg>
+                            Langues
+                        </h3>
+                        <div class="space-y-4">
+                            <!-- FR -->
+                            <div>
+                                <div class="flex justify-between text-sm text-slate-600 mb-1"><span>Français</span> <span class="font-semibold text-slate-900">Langue maternelle</span></div>
+                                <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-brand h-2 rounded-full" style="width: 100%"></div></div>
+                            </div>
+                            
+                            <!-- EN -->
+                            <div>
+                                <div class="flex justify-between text-sm text-slate-600 mb-1"><span>Anglais (TOEIC : 955/990)</span> <span class="font-semibold text-slate-900">Niveau C1+ (Avancé)</span></div>
+                                <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-brand h-2 rounded-full" style="width: 95%"></div></div>
+                            </div>
+                            
+                            <!-- DE -->
+                            <div>
+                                <div class="flex justify-between text-sm text-slate-600 mb-1"><span>Allemand</span> <span class="font-semibold text-slate-900">Niveau A2/B1</span></div>
+                                <div class="w-full bg-slate-100 rounded-full h-2"><div class="bg-brand h-2 rounded-full" style="width: 35%"></div></div>
+                            </div>
+                        </div>
 
-            <div class="grid grid-cols-2 gap-12">
-                <div class="space-y-6">
-                    <!-- Bar Chart Simulation -->
-                    <div>
-                        <div class="flex justify-between text-sm mb-1"><span>Longueur = 25 (Standard)</span> <span class="text-green-400">100% Précision</span></div>
-                        <div class="w-full bg-slate-700 h-4 rounded-full overflow-hidden">
-                            <div class="bg-green-500 h-full w-full"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-sm mb-1"><span>Longueur = 100</span> <span class="text-green-400">98% Précision</span></div>
-                        <div class="w-full bg-slate-700 h-4 rounded-full overflow-hidden">
-                            <div class="bg-green-500 h-full w-[98%]"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-sm mb-1"><span>Longueur = 500</span> <span class="text-yellow-400">75% Précision</span></div>
-                        <div class="w-full bg-slate-700 h-4 rounded-full overflow-hidden">
-                            <div class="bg-yellow-500 h-full w-[75%]"></div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-sm mb-1"><span>Longueur = 1000</span> <span class="text-red-400">30% Précision</span></div>
-                        <div class="w-full bg-slate-700 h-4 rounded-full overflow-hidden">
-                            <div class="bg-red-500 h-full w-[30%]"></div>
+                         <div class="mt-6 pt-6 border-t border-slate-100 flex items-center gap-3">
+                             <div class="bg-slate-100 p-2 rounded-lg text-slate-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                             </div>
+                             <span class="text-slate-900 font-bold">Paris, France</span>
                         </div>
                     </div>
                 </div>
                 
-                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 text-sm">
-                    <h3 class="font-bold text-white mb-4"><i class="fas fa-search-dollar text-blue-400 mr-2"></i>Analyse</h3>
-                    <p class="text-slate-300 mb-4">
-                        Plus la séquence est longue, plus la probabilité qu'un motif aléatoire ("faux positif") apparaisse dans le bruit augmente.
-                    </p>
-                    <p class="text-slate-300">
-                        <strong>Limite observée :</strong> Autour de 500 caractères, le signal du motif se dilue trop par rapport au volume de bruit avec seulement 70 séquences.
-                    </p>
+                <!-- Timeline Formation -->
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100 reveal delay-200 hover:shadow-lg transition-shadow duration-300">
+                    <h3 class="text-2xl font-bold font-display mb-6 text-slate-900">Formation</h3>
+                    <div class="space-y-12 border-l-2 border-slate-200 pl-8 ml-2 relative">
+                        <!-- Connecteur Vertical prolongé -->
+                        
+                        <div class="relative group">
+                            <div class="absolute -left-[41px] top-1 h-5 w-5 rounded-full bg-brand border-4 border-white shadow-md group-hover:scale-125 group-hover:bg-sky-400 transition"></div>
+                            <h4 class="text-lg font-bold text-slate-900">Diplôme d'Ingénieur Généraliste</h4>
+                            <p class="text-brand font-medium text-sm">EPF École d'ingénieurs • Cachan</p>
+                            <p class="text-slate-500 text-sm mt-1">2021 - 2026 (En cours)</p>
+                            <p class="text-slate-500 text-sm mt-2 italic bg-white inline-block px-2 py-0.5 rounded border border-slate-100">Majeure Ingénierie et Santé (M2 e-Santé)</p>
+                        </div>
+
+                        <div class="relative group">
+                            <div class="absolute -left-[41px] top-1 h-5 w-5 rounded-full bg-slate-300 border-4 border-white shadow-md group-hover:scale-125 transition"></div>
+                            <h4 class="text-lg font-bold text-slate-900">Baccalauréat Maths/Physique</h4>
+                            <p class="text-slate-700 font-medium text-sm">Lycée Camille Sée • Paris</p>
+                            <p class="text-slate-500 text-sm mt-1">2018 - 2021</p>
+                            <p class="text-slate-500 text-sm italic">Mention Bien</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- SLIDE 9: Expérimentation (Stress Test 2) -->
-    <div class="slide" id="slide-9">
-        <div class="w-full max-w-5xl">
-            <div class="flex items-center gap-4 mb-8">
-                <div class="bg-orange-500 p-3 rounded-lg"><i class="fas fa-database text-white text-xl"></i></div>
-                <h2 class="text-3xl font-bold">Expérimentation : Quantité de Données</h2>
+    <!-- Expérience Professionnelle -->
+    <section id="experience" class="py-20 bg-slate-50">
+        <div class="max-w-5xl mx-auto px-6">
+            <h2 class="text-3xl font-bold font-display mb-12 text-center text-slate-900 reveal">Expérience Professionnelle</h2>
+            
+            <div class="space-y-6">
+                <!-- Exp 1 : AQS Med -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center gap-6 card-hover reveal">
+                    <div class="md:w-1/4">
+                        <p class="text-sm font-bold text-slate-400 uppercase tracking-wide">Sept 2024 – Déc 2024</p>
+                        <h4 class="font-bold text-lg mt-1">AQS Med</h4>
+                        <p class="text-slate-500 text-sm">Malte (International)</p>
+                    </div>
+                    <div class="md:w-3/4 border-l border-slate-100 pl-0 md:pl-6 pt-4 md:pt-0">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Stage Élève Ingénieur - Analyste Technique</h3>
+                        <p class="text-slate-600 text-sm text-justify">
+                            Analyse, modélisation et dimensionnement d'installations photovoltaïques sur mesure. Participation intégrale au processus technique : analyse des besoins clients, visites de sites, <strong>modélisation 3D sous SketchUp</strong> (extension Skelion), calcul d'ensoleillement et dimensionnement électrique des systèmes.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Exp 2 : Cabinet Dentaire -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center gap-6 card-hover reveal">
+                    <div class="md:w-1/4">
+                        <p class="text-sm font-bold text-slate-400 uppercase tracking-wide">Août 2023</p>
+                        <h4 class="font-bold text-lg mt-1">Cabinet Dentaire</h4>
+                        <p class="text-slate-500 text-sm">Paris 15e, France</p>
+                    </div>
+                    <div class="md:w-3/4 border-l border-slate-100 pl-0 md:pl-6 pt-4 md:pt-0">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Stage Humanitaire & RSE</h3>
+                        <p class="text-slate-600 text-sm text-justify">
+                            Mise en place d'une gestion des consommables plus économique. Étude pour améliorer les conditions de travail (analyse thermique du cabinet en période de canicule).
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Exp 3 : Garage GALARD -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center gap-6 card-hover reveal">
+                    <div class="md:w-1/4">
+                        <p class="text-sm font-bold text-slate-400 uppercase tracking-wide">Juillet 2022</p>
+                        <h4 class="font-bold text-lg mt-1">Garage GALARD</h4>
+                        <p class="text-slate-500 text-sm">Arrou, France</p>
+                    </div>
+                    <div class="md:w-3/4 border-l border-slate-100 pl-0 md:pl-6 pt-4 md:pt-0">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Stage d'exécution - Ouvrier Garagiste</h3>
+                        <p class="text-slate-600 text-sm text-justify">
+                            Gestion des stocks, entretien et réparation des éléments roulants et systèmes de freinage. Accueil des clients et assistance administrative.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Compétences Techniques -->
+    <section id="skills" class="py-20 bg-white">
+        <div class="max-w-4xl mx-auto px-6">
+            <h2 class="text-3xl font-bold font-display mb-12 text-center text-slate-900 reveal">Compétences Techniques</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- Colonne 1 -->
+                <div class="reveal delay-100">
+                    <h4 class="font-bold text-slate-900 mb-4 border-b pb-2">CAO / Simulation & 3D</h4>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="skill-tag px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium text-sm hover:bg-brand hover:text-white hover:border-brand cursor-default">CATIA V5</span>
+                        <span class="skill-tag px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium text-sm hover:bg-brand hover:text-white hover:border-brand cursor-default">Abaqus CAE</span>
+                        <span class="skill-tag px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium text-sm hover:bg-brand hover:text-white hover:border-brand cursor-default">Bambu Studio</span>
+                        <span class="skill-tag px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium text-sm hover:bg-brand hover:text-white hover:border-brand cursor-default">FlashForge</span>
+                        <span class="skill-tag px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium text-sm hover:bg-brand hover:text-white hover:border-brand cursor-default">Unity 3D (VR)</span>
+                    </div>
+                </div>
+                <!-- Colonne 2 -->
+                <div class="reveal delay-200">
+                    <h4 class="font-bold text-slate-900 mb-4 border-b pb-2">Programmation & Outils</h4>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="skill-tag px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium text-sm hover:bg-brand hover:text-white hover:border-brand cursor-default">Python (ML/DL)</span>
+                        <span class="skill-tag px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium text-sm hover:bg-brand hover:text-white hover:border-brand cursor-default">Arduino IDE</span>
+                        <span class="skill-tag px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium text-sm hover:bg-brand hover:text-white hover:border-brand cursor-default">Pack Office</span>
+                        <span class="skill-tag px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium text-sm hover:bg-brand hover:text-white hover:border-brand cursor-default">Canva</span>
+                        <span class="skill-tag px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium text-sm hover:bg-brand hover:text-white hover:border-brand cursor-default">Figma</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION SOFT SKILLS (Adaptée du CV) -->
+    <section id="soft-skills" class="py-20 bg-slate-50 relative overflow-hidden">
+        <div class="blob bg-purple-200 w-64 h-64 rounded-full top-10 left-10 opacity-30 mix-blend-multiply blur-3xl"></div>
+        <div class="blob bg-sky-200 w-64 h-64 rounded-full bottom-10 right-10 opacity-30 mix-blend-multiply blur-3xl"></div>
+
+        <div class="max-w-6xl mx-auto px-6 relative z-10">
+            <h2 class="text-3xl font-bold font-display mb-4 text-center text-slate-900 reveal">Soft Skills</h2>
+            <p class="text-center text-slate-500 mb-12 max-w-2xl mx-auto reveal">Mes atouts personnels développés au travers de mes projets et passions.</p>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <!-- 1. Esprit d'équipe -->
+                <div class="reveal delay-100">
+                    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front flex-col gap-2">
+                                <h4 class="font-bold text-slate-800 text-base">Esprit d'équipe</h4>
+                            </div>
+                            <div class="flip-card-back">
+                                <p class="text-sm font-medium">Développé via les jeux en ligne et projets de groupe</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Créativité -->
+                <div class="reveal delay-100">
+                    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front flex-col gap-2">
+                                <h4 class="font-bold text-slate-800 text-base">Créativité Technique</h4>
+                            </div>
+                            <div class="flip-card-back">
+                                <p class="text-sm font-medium">Modélisation 3D, projets DIY, conception</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Rigueur -->
+                <div class="reveal delay-200">
+                    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front flex-col gap-2">
+                                <h4 class="font-bold text-slate-800 text-base">Précision</h4>
+                            </div>
+                            <div class="flip-card-back">
+                                <p class="text-sm font-medium">Passion pour l'horlogerie mécanique</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Adaptabilité -->
+                <div class="reveal delay-200">
+                    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-front flex-col gap-2">
+                                <h4 class="font-bold text-slate-800 text-base">Adaptabilité</h4>
+                            </div>
+                            <div class="flip-card-back">
+                                <p class="text-sm font-medium">Expérience internationale (Malte) et militaire</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Projets -->
+    <section id="projets" class="py-24 bg-white">
+        <div class="max-w-6xl mx-auto px-6">
+            <h2 class="text-4xl font-bold font-display mb-12 text-center text-slate-900 reveal">Projets & Réalisations</h2>
+            
+            <div class="flex flex-col gap-12 max-w-3xl mx-auto">
+                
+                <!-- Projet 1 : Main Robotique EMG -->
+                <div class="group bg-white rounded-2xl overflow-hidden border border-slate-100 card-hover transition-all duration-300 reveal">
+                    <div class="h-48 overflow-hidden relative bg-slate-100 flex items-center justify-center">
+                        <i class="ph ph-robot text-6xl text-slate-300"></i>
+                    </div>
+                    <div class="p-8">
+                        <h3 class="text-2xl font-bold mb-2 font-display text-slate-900 group-hover:text-brand transition">Main Robotique (EMG)</h3>
+                        <p class="text-xs font-bold text-slate-400 mb-3 uppercase">Projet Scolaire Majeur</p>
+                        <p class="text-slate-600 mb-6 text-base leading-relaxed text-justify">
+                            Réalisation d'une main robotique fonctionnelle contrôlée par <strong>Arduino</strong> à partir de capteurs électromyographiques (EMG). Traitement du signal musculaire pour actionner les moteurs.
+                        </p>
+                        <div class="flex gap-2 flex-wrap">
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Arduino</span>
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Capteurs EMG</span>
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Robotique</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projet 2 : Prothèse de pied 3D -->
+                <div class="group bg-white rounded-2xl overflow-hidden border border-slate-100 card-hover transition-all duration-300 reveal">
+                    <div class="h-48 overflow-hidden relative bg-slate-100 flex items-center justify-center">
+                        <i class="ph ph-footprints text-6xl text-slate-300"></i>
+                    </div>
+                    <div class="p-8">
+                        <h3 class="text-2xl font-bold mb-2 font-display text-slate-900 group-hover:text-brand transition">Prothèse de pied 3D</h3>
+                        <p class="text-xs font-bold text-slate-400 mb-3 uppercase">Projet Scolaire Majeur</p>
+                        <p class="text-slate-600 mb-6 text-base leading-relaxed text-justify">
+                            Conception et fabrication d'une prothèse de pied en conformité avec un cahier des charges biomécanique strict. Utilisation de l'impression 3D pour le prototypage rapide.
+                        </p>
+                        <div class="flex gap-2 flex-wrap">
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Impression 3D</span>
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Biomécanique</span>
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">CAO</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projet 3 : AVE-CESAR -->
+                <div class="group bg-white rounded-2xl overflow-hidden border border-slate-100 card-hover transition-all duration-300 reveal">
+                     <div class="h-48 overflow-hidden relative bg-slate-100 flex items-center justify-center">
+                        <i class="ph ph-baby text-6xl text-slate-300"></i>
+                    </div>
+                    <div class="p-8">
+                        <h3 class="text-2xl font-bold mb-2 font-display text-slate-900 group-hover:text-brand transition">Projet AVE-CESAR</h3>
+                        <p class="text-xs font-bold text-slate-400 mb-3 uppercase">Projet Scolaire Majeur</p>
+                        <p class="text-slate-600 mb-6 text-base leading-relaxed text-justify">
+                            Revue de l'état de l'art sur les simulateurs chirurgicaux et élaboration d'un protocole expérimental pour modéliser le geste de césarienne.
+                        </p>
+                        <div class="flex gap-2 flex-wrap">
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Recherche</span>
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Simulation</span>
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Médical</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Projet 4 : Outil Médical (Perso) -->
+                <div class="group bg-white rounded-2xl overflow-hidden border border-slate-100 card-hover transition-all duration-300 reveal">
+                     <div class="h-48 overflow-hidden relative bg-slate-100 flex items-center justify-center">
+                        <i class="ph ph-wrench text-6xl text-slate-300"></i>
+                    </div>
+                    <div class="p-8">
+                        <h3 class="text-2xl font-bold mb-2 font-display text-slate-900 group-hover:text-brand transition">Conception Outil Médical</h3>
+                        <p class="text-xs font-bold text-slate-400 mb-3 uppercase">Projet Personnel (Depuis Juin 2023)</p>
+                        <p class="text-slate-600 mb-6 text-base leading-relaxed text-justify">
+                            Conception intégrale d'un outil à usage médical. Étapes réalisées : CAO, réalisation de prototypes et usinage.
+                        </p>
+                        <div class="flex gap-2 flex-wrap">
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Prototypage</span>
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Usinage</span>
+                            <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Innovation</span>
+                        </div>
+                    </div>
+                </div>
+                
+                 <!-- Projet 5 : Période Militaire -->
+                <div class="group bg-white rounded-2xl overflow-hidden border border-slate-100 card-hover transition-all duration-300 reveal">
+                     <div class="h-48 overflow-hidden relative bg-slate-100 flex items-center justify-center">
+                        <i class="ph ph-flag text-6xl text-slate-300"></i>
+                    </div>
+                    <div class="p-8">
+                        <h3 class="text-2xl font-bold mb-2 font-display text-slate-900 group-hover:text-brand transition">Période Militaire</h3>
+                        <p class="text-xs font-bold text-slate-400 mb-3 uppercase">Juillet 2020 • Armée de Terre, 5e RD</p>
+                        <p class="text-slate-600 mb-6 text-base leading-relaxed text-justify">
+                           Expérience immersive au sein du 5e Régiment de Dragons. Développement de la rigueur, de la discipline et de la cohésion de groupe.
+                        </p>
+                        <div class="flex gap-2 flex-wrap">
+                            <span class="text-xs font-semibold bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">Engagement</span>
+                            <span class="text-xs font-semibold bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">Discipline</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer / Contact -->
+    <footer class="bg-slate-900 text-white py-20 text-center relative overflow-hidden">
+        <div class="blob bg-brand w-96 h-96 rounded-full top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20 blur-[100px]"></div>
+        
+        <div class="relative z-10 max-w-2xl mx-auto px-6">
+            <h2 class="text-4xl font-bold font-display mb-6">Contactez-moi</h2>
+            <p class="text-slate-400 mb-8 text-lg">
+                Disponible dès février 2026 pour un stage de fin d'études. Discutons de vos projets !
+            </p>
+            
+            <div class="flex flex-col md:flex-row gap-4 justify-center items-center mb-10">
+                <a href="mailto:leo-paul.moussally@epfedu.fr" class="flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-full font-bold hover:bg-sky-50 transition transform hover:scale-105">
+                    <span></span> leo-paul.moussally@epfedu.fr
+                </a>
+                <a href="tel:+33788127024" class="flex items-center gap-2 border border-slate-700 text-white px-6 py-3 rounded-full font-bold hover:bg-slate-800 transition transform hover:scale-105">
+                    <span></span> 07 88 12 70 24
+                </a>
             </div>
             
-            <p class="mb-8 text-slate-300">Combien de séquences minimum faut-il pour apprendre ?</p>
-
-            <div class="flex items-end justify-center gap-8 h-64 border-b border-slate-700 pb-4 mb-4">
-                <div class="w-24 bg-red-500/50 hover:bg-red-500 transition-all h-[20%] relative group rounded-t">
-                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 font-bold text-red-400">Bad</span>
-                    <span class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white">5 seqs</span>
-                </div>
-                <div class="w-24 bg-yellow-500/50 hover:bg-yellow-500 transition-all h-[50%] relative group rounded-t">
-                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 font-bold text-yellow-400">Moyen</span>
-                    <span class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white">15 seqs</span>
-                </div>
-                <div class="w-24 bg-green-500/50 hover:bg-green-500 transition-all h-[95%] relative group rounded-t">
-                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 font-bold text-green-400">Excellent</span>
-                    <span class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white">50 seqs</span>
-                </div>
-                <div class="w-24 bg-green-500/50 hover:bg-green-500 transition-all h-[98%] relative group rounded-t">
-                    <span class="absolute -top-8 left-1/2 -translate-x-1/2 font-bold text-green-400">Parfait</span>
-                    <span class="absolute bottom-2 left-1/2 -translate-x-1/2 text-xs text-white">100 seqs</span>
-                </div>
+            <div class="flex justify-center gap-6 mb-8">
+                 <a href="https://linkedin.com/in/leo-paul-moussally" target="_blank" class="text-slate-400 hover:text-white transition transform hover:scale-110">
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                </a>
             </div>
-            <p class="text-center text-slate-400 italic">Hauteur = Conférence du modèle (Posterior Mean)</p>
 
-            <div class="mt-8 text-center text-slate-300 max-w-2xl mx-auto">
-                Le modèle converge très vite. Dès <strong>20-30 séquences</strong>, le motif émerge clairement du bruit, ce qui prouve la puissance de l'approche bayésienne sur des petits datasets.
+            <div class="text-slate-600 text-sm">
+                &copy; <span id="year"></span> Léo-Paul Moussally.
             </div>
         </div>
-    </div>
+    </footer>
 
-    <!-- SLIDE 10: Conclusion -->
-    <div class="slide" id="slide-10">
-        <div class="max-w-4xl text-center">
-            <h2 class="text-5xl font-bold mb-12 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">Conclusion</h2>
-            
-            <div class="grid grid-cols-2 gap-8 text-left">
-                <div class="bg-slate-800 p-8 rounded-xl border border-green-500/30">
-                    <h3 class="text-xl font-bold text-green-400 mb-4"><i class="fas fa-thumbs-up mr-2"></i>Points Forts</h3>
-                    <ul class="space-y-3 text-slate-300">
-                        <li><i class="fas fa-check text-green-500 mr-2"></i>Code déclaratif et concis.</li>
-                        <li><i class="fas fa-check text-green-500 mr-2"></i>Gère naturellement l'incertitude.</li>
-                        <li><i class="fas fa-check text-green-500 mr-2"></i>Robuste aux petits jeux de données.</li>
-                    </ul>
-                </div>
-
-                <div class="bg-slate-800 p-8 rounded-xl border border-red-500/30">
-                    <h3 class="text-xl font-bold text-red-400 mb-4"><i class="fas fa-exclamation-triangle mr-2"></i>Limites</h3>
-                    <ul class="space-y-3 text-slate-300">
-                        <li><i class="fas fa-times text-red-500 mr-2"></i>Complexité exponentielle avec la longueur.</li>
-                        <li><i class="fas fa-times text-red-500 mr-2"></i>Nécessite de définir les "Priors" correctement.</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="mt-16">
-                <p class="text-slate-400 mb-4">Questions ?</p>
-                <button onclick="currentSlide = 0; updateSlides()" class="px-6 py-2 border border-slate-600 rounded-full text-slate-400 hover:text-white hover:border-white transition">
-                    <i class="fas fa-redo mr-2"></i>Recommencer
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================= SLIDES END ================= -->
-
+    <!-- Scripts -->
     <script>
-        let currentSlide = 0;
-        const slides = document.querySelectorAll('.slide');
-        const progressBar = document.getElementById('progress-bar');
-        const slideNumberDisplay = document.getElementById('slide-number');
-        const totalSlidesDisplay = document.getElementById('total-slides');
-
-        totalSlidesDisplay.innerText = slides.length;
-
-        function updateSlides() {
-            slides.forEach((slide, index) => {
-                slide.classList.remove('active', 'prev');
-                if (index === currentSlide) {
-                    slide.classList.add('active');
-                } else if (index < currentSlide) {
-                    slide.classList.add('prev');
-                }
-            });
-
-            // Update Progress Bar
-            const progress = ((currentSlide + 1) / slides.length) * 100;
-            progressBar.style.width = `${progress}%`;
-            
-            // Update Number
-            slideNumberDisplay.innerText = currentSlide + 1;
-        }
-
-        function nextSlide() {
-            if (currentSlide < slides.length - 1) {
-                currentSlide++;
-                updateSlides();
-            }
-        }
-
-        function prevSlide() {
-            if (currentSlide > 0) {
-                currentSlide--;
-                updateSlides();
-            }
-        }
-
-        // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowRight' || e.key === ' ') {
-                nextSlide();
-            } else if (e.key === 'ArrowLeft') {
-                prevSlide();
-            }
+        // --- Preloader ---
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('preloader');
+            setTimeout(() => {
+                preloader.classList.add('hidden-loader');
+                setTimeout(() => preloader.style.display = 'none', 600);
+            }, 800);
         });
 
-        // Initialize
-        updateSlides();
+        // --- Scroll Reset ---
+        history.scrollRestoration = "manual";
+        window.scrollTo(0, 0);
+
+        // --- Modal ---
+        function toggleModal() {
+            document.getElementById('inspirationModal').classList.toggle('active');
+        }
+
+        // --- Typewriter ---
+        const textToType = "Ingénierie e-Santé | Conception 3D | Robotique";
+        const typeWriterElement = document.getElementById('typewriter');
+        let i = 0;
+
+        function typeWriter() {
+            if (i < textToType.length) {
+                typeWriterElement.textContent += textToType.charAt(i);
+                i++;
+                setTimeout(typeWriter, 50); 
+            } else {
+                setTimeout(() => {
+                    typeWriterElement.classList.remove('typing-cursor');
+                }, 2000);
+            }
+        }
+        setTimeout(typeWriter, 1200);
+
+        // --- Scroll Spy ---
+        const sections = document.querySelectorAll("section");
+        const navLinks = document.querySelectorAll(".nav-link");
+
+        function activeMenu() {
+            let len = sections.length;
+            while (--len && window.scrollY + 100 < sections[len].offsetTop) {}
+            navLinks.forEach(ltx => ltx.classList.remove("active"));
+            
+            // Mapper les sections aux liens
+            if (len >= 0) {
+                 const currentId = sections[len].getAttribute('id');
+                 const activeLink = document.querySelector(`.nav-link[href="#${currentId}"]`);
+                 if(activeLink) activeLink.classList.add("active");
+            }
+        }
+        window.addEventListener("scroll", activeMenu);
+
+        // --- Scroll Top ---
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // --- Year ---
+        document.getElementById("year").textContent = new Date().getFullYear();
+
+        // --- Reveal ---
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // --- Parallax ---
+        document.addEventListener('mousemove', function(e) {
+            const blobs = document.querySelectorAll('.blob');
+            blobs.forEach(blob => {
+                const speed = blob.getAttribute('data-speed');
+                const moveX = (window.innerWidth - e.clientX * speed) / 100; 
+                const moveY = (window.innerHeight - e.clientY * speed) / 100;
+                blob.style.transform = `translate(${moveX}px, ${moveY}px)`;
+            });
+        });
     </script>
 </body>
 </html>
